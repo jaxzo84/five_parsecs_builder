@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Five Parsecs from Home — Crew Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:         #0d0f14;
+    --surface:    #13161e;
+    --surface2:   #1c2030;
+    --border:     #2a3045;
+    --border2:    #3a4560;
+    --accent:     #d4a84b;
+    --accent2:    #e8c06a;
+    --red:        #c0392b;
+    --text:       #d8dce8;
+    --text2:      #8a90a8;
+    --text3:      #5a6080;
+    --font-head:  'Bebas Neue', sans-serif;
+    --font-body:  'Barlow', sans-serif;
+    --font-cond:  'Barlow Condensed', sans-serif;
+    --font-mono:  'Share Tech Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* === HEADER === */
+  #app-header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--accent);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo-block { display: flex; flex-direction: column; gap: 2px; }
+  .logo-title {
+    font-family: var(--font-head);
+    font-size: 2rem;
+    color: var(--accent);
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+  .logo-sub {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text3);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+  .header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .btn {
+    font-family: var(--font-cond);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 0.5rem 1.2rem;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-primary { background: var(--accent); color: #0d0f14; border-color: var(--accent); }
+  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); color: #0d0f14; }
+  .btn-danger { border-color: var(--red); color: var(--red); }
+  .btn-danger:hover { background: var(--red); color: #fff; }
+  .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.75rem; }
+
+  /* === LAYOUT === */
+  #app-body {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    height: calc(100vh - 65px);
+    overflow: hidden;
+  }
+  #sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  #main-panel {
+    overflow-y: auto;
+    padding: 1.5rem 2rem;
+  }
+
+  /* === CREW OVERVIEW === */
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  .crew-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .info-field { display: flex; flex-direction: column; gap: 3px; }
+  .info-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; }
+  .info-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    padding: 0.35rem 0.5rem;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  .info-input:focus { outline: none; border-color: var(--accent); }
+  .info-input.wide { grid-column: 1 / -1; }
+
+  /* === CREW ROSTER === */
+  .roster-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .roster-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .roster-item:hover { border-color: var(--border2); }
+  .roster-item.active { border-color: var(--accent); background: rgba(212,168,75,0.06); }
+  .roster-item.is-captain { border-left: 3px solid var(--accent); }
+  .roster-name {
+    font-family: var(--font-cond);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .roster-type { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text3); }
+  .roster-actions { display: flex; gap: 4px; }
+
+  /* === CHARACTER PANEL === */
+  .char-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .char-section-title {
+    font-family: var(--font-head);
+    font-size: 1.1rem;
+    color: var(--accent);
+    letter-spacing: 2px;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .form-grid {
+    display: grid;
+    gap: 0.75rem;
+  }
+  .form-grid-2 { grid-template-columns: 1fr 1fr; }
+  .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.span-2 { grid-column: 1 / -1; }
+  label.fl {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  input[type="text"], input[type="number"], select, textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  select option { background: var(--surface); }
+  textarea { resize: vertical; min-height: 60px; }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5rem;
+  }
+  .stat-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 0.5rem;
+    text-align: center;
+  }
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    color: var(--text3);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .stat-val {
+    font-family: var(--font-head);
+    font-size: 1.4rem;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-input {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-family: var(--font-head);
+    font-size: 1.4rem;
+    text-align: center;
+    width: 100%;
+    padding: 0;
+  }
+  .stat-input:focus { outline: none; color: var(--accent2); }
+
+  /* Weapons table */
+  .weapons-table { width: 100%; border-collapse: collapse; }
+  .weapons-table th {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .weapons-table td {
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid rgba(42,48,69,0.5);
+    vertical-align: middle;
+  }
+  .weapons-table td input, .weapons-table td select {
+    padding: 0.2rem 0.3rem;
+    font-size: 0.8rem;
+  }
+  .weapons-table tr:last-child td { border-bottom: none; }
+
+  /* Tags */
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--text2);
+    padding: 2px 6px;
+    letter-spacing: 1px;
+  }
+  .tag.trait { border-color: #2a4060; color: #5a8aaa; }
+
+  /* Divider */
+  .h-divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+  }
+  .empty-state h2 { font-family: var(--font-head); font-size: 2rem; color: var(--border2); margin-bottom: 0.5rem; letter-spacing: 4px; }
+
+  /* Char header */
+  .char-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+  .char-header-info { display: flex; flex-direction: column; gap: 4px; }
+  .char-header-name {
+    font-family: var(--font-head);
+    font-size: 2rem;
+    color: var(--text);
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+  .char-header-type { font-family: var(--font-mono); font-size: 0.65rem; color: var(--accent); letter-spacing: 2px; }
+  .captain-badge {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    background: var(--accent);
+    color: #0d0f14;
+    padding: 2px 6px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Traits info box */
+  .traits-info {
+    background: rgba(212,168,75,0.05);
+    border: 1px solid rgba(212,168,75,0.2);
+    padding: 0.75rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text2);
+    line-height: 1.7;
+  }
+  .traits-info strong { color: var(--accent); }
+
+  /* Export panel */
+  #export-panel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); }
+
+  /* Ship panel */
+  .ship-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+
+  /* Warning */
+  .warn {
+    background: rgba(192,57,43,0.1);
+    border: 1px solid rgba(192,57,43,0.3);
+    padding: 0.5rem 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: #e07060;
+  }
+
+  .info-box {
+    background: rgba(42,64,96,0.2);
+    border: 1px solid rgba(42,64,96,0.5);
+    padding: 0.5rem 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: #6098c0;
+  }
+
+  /* Utility */
+  .flex { display: flex; }
+  .gap-1 { gap: 0.5rem; }
+  .gap-2 { gap: 1rem; }
+  .mt-1 { margin-top: 0.5rem; }
+  .mt-2 { margin-top: 1rem; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+
+  /* Luck dots */
+  .luck-dots { display: flex; gap: 4px; align-items: center; }
+  .luck-dot {
+    width: 12px; height: 12px;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .luck-dot.filled { background: var(--accent); }
+
+  /* Gear list */
+  .gear-list { display: flex; flex-direction: column; gap: 4px; }
+  .gear-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 0.3rem 0.5rem;
+  }
+  .gear-item input { flex: 1; border: none; background: transparent; }
+  .gear-item .btn-sm { border: none; color: var(--text3); padding: 0 4px; }
+  .gear-item .btn-sm:hover { color: var(--red); }
+</style>
+</head>
+<body>
+
+<header id="app-header">
+  <div class="logo-block">
+    <div class="logo-title">Five Parsecs from Home</div>
+    <div class="logo-sub">Crew Builder — Third Edition</div>
+  </div>
+  <div class="header-actions">
+    <button class="btn" onclick="loadCrew()">Load</button>
+    <button class="btn" onclick="saveCrew()">Save</button>
+    <button class="btn btn-primary" onclick="exportTXT()">Export TXT</button>
+    <button class="btn btn-primary" onclick="exportPDF()">Export PDF</button>
+  </div>
+</header>
+
+<div id="app-body">
+  <aside id="sidebar">
+    <div>
+      <div class="section-label">Crew Details</div>
+      <div class="crew-info-grid">
+        <div class="info-field" style="grid-column:1/-1">
+          <span class="info-label">Crew Name</span>
+          <input type="text" class="info-input" id="crew-name" placeholder="Name your crew" oninput="updateCrew()">
+        </div>
+        <div class="info-field">
+          <span class="info-label">Credits</span>
+          <input type="number" class="info-input" id="crew-credits" value="0" oninput="updateCrew()">
+        </div>
+        <div class="info-field">
+          <span class="info-label">Story Points</span>
+          <input type="number" class="info-input" id="crew-story" value="0" oninput="updateCrew()">
+        </div>
+        <div class="info-field">
+          <span class="info-label">Quest Rumors</span>
+          <input type="number" class="info-input" id="crew-rumors" value="0" oninput="updateCrew()">
+        </div>
+        <div class="info-field">
+          <span class="info-label">Patrons Known</span>
+          <input type="number" class="info-input" id="crew-patrons" value="0" oninput="updateCrew()">
+        </div>
+        <div class="info-field">
+          <span class="info-label">Rivals</span>
+          <input type="number" class="info-input" id="crew-rivals" value="0" oninput="updateCrew()">
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Ship</div>
+      <div class="crew-info-grid">
+        <div class="info-field" style="grid-column:1/-1">
+          <span class="info-label">Ship Name</span>
+          <input type="text" class="info-input" id="ship-name" placeholder="Unnamed vessel" oninput="updateCrew()">
+        </div>
+        <div class="info-field" style="grid-column:1/-1">
+          <span class="info-label">Ship Type</span>
+          <select class="info-input" id="ship-type" onchange="updateShipStats()">
+            <option value="">— Select —</option>
+            <option value="Worn freighter|30|Fuel Hog: Fuel cost +1|1D6+20">Worn Freighter (Hull 30)</option>
+            <option value="Retired troop transport|35|Emergency Drives: Reduce emergency hull dmg by 3|1D6+30">Retired Troop Transport (Hull 35)</option>
+            <option value="Strange alien vessel|25||1D6+15">Strange Alien Vessel (Hull 25)</option>
+            <option value="Upgraded shuttle|20||1D6+10">Upgraded Shuttle (Hull 20)</option>
+            <option value="Retired scout ship|25|Fuel-efficient: Fuel cost -1 credit|1D6+20">Retired Scout Ship (Hull 25)</option>
+            <option value="Repurposed science vessel|20||1D6+10">Repurposed Science Vessel (Hull 20)</option>
+            <option value="Battered mining ship|35|Fuel Hog: Fuel cost +1|1D6+20">Battered Mining Ship (Hull 35)</option>
+            <option value="Unreliable merchant cruiser|30||1D6+20">Unreliable Merchant Cruiser (Hull 30)</option>
+            <option value="Former diplomatic vessel|25||1D6+15">Former Diplomatic Vessel (Hull 25)</option>
+            <option value="Ancient low-tech craft|35|Dodgy Drive: Extra 2 dmg on hull damage roll|1D6+20">Ancient Low-Tech Craft (Hull 35)</option>
+            <option value="Built from salvaged wrecks|30||1D6+20">Built From Salvaged Wrecks (Hull 30)</option>
+            <option value="Worn colony ship|25|Standard Issue: Ship components -1 credit|1D6+20">Worn Colony Ship (Hull 25)</option>
+            <option value="Retired military patrol ship|40|Armored: Lose 1 less hull point per hit|1D6+35">Retired Military Patrol Ship (Hull 40)</option>
+          </select>
+        </div>
+        <div class="info-field">
+          <span class="info-label">Hull Points</span>
+          <input type="number" class="info-input" id="ship-hull" value="" oninput="updateCrew()">
+        </div>
+        <div class="info-field">
+          <span class="info-label">Debt</span>
+          <input type="number" class="info-input" id="ship-debt" value="0" oninput="updateCrew()">
+        </div>
+        <div class="info-field" style="grid-column:1/-1">
+          <span class="info-label">Ship Trait</span>
+          <input type="text" class="info-input" id="ship-trait" placeholder="None" oninput="updateCrew()">
+        </div>
+        <div class="info-field" style="grid-column:1/-1">
+          <span class="info-label">Upgrades</span>
+          <input type="text" class="info-input" id="ship-upgrades" placeholder="None" oninput="updateCrew()">
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Stash</div>
+      <div class="info-field">
+        <textarea id="crew-stash" class="info-input" placeholder="Shared equipment pool..." rows="3" oninput="updateCrew()"></textarea>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label" style="display:flex; justify-content:space-between; align-items:center;">
+        Crew Roster
+        <button class="btn btn-sm btn-primary" onclick="addMember()">+ Add</button>
+      </div>
+      <div class="roster-list" id="roster-list">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Flavor</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="fl">We Met Through</label>
+          <select id="crew-met" onchange="updateCrew()">
+            <option value="">— Roll or Select —</option>
+            <option>Hired by a random member</option>
+            <option>Pursuit of a member's motivation</option>
+            <option>Being in trouble with authorities</option>
+            <option>A common enemy</option>
+            <option>A common cause or belief</option>
+            <option>A random meeting in a bar</option>
+            <option>A previous job</option>
+            <option>Mutual protection in a hostile universe</option>
+            <option>Being old war buddies</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="fl">We Are Best Characterized As</label>
+          <select id="crew-char" onchange="updateCrew()">
+            <option value="">— Roll or Select —</option>
+            <option>Lovable rogues</option>
+            <option>Consummate professionals</option>
+            <option>Cut-throat outlaws</option>
+            <option>Defenders of the down-trodden</option>
+            <option>Hardened rebels</option>
+            <option>Starport scum</option>
+            <option>Somewhat honorable bandits</option>
+            <option>In it for the credits</option>
+            <option>Living the dream!</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="fl">Crew Notes</label>
+          <textarea id="crew-notes" rows="3" placeholder="Notes..." oninput="updateCrew()"></textarea>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main id="main-panel">
+    <div id="char-view">
+      <div class="empty-state">
+        <h2>NO CREW SELECTED</h2>
+        <p>Add a crew member from the sidebar or load a saved roster.</p>
+        <br>
+        <button class="btn btn-primary" onclick="addMember()" style="margin: 0 auto;">+ Add First Member</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// =====================================================================
+// DATA
+// =====================================================================
+
+const SPECIES_DATA = {
+  'Baseline Human': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'Can exceed 1 Luck point. Roll Background, Motivation, and Class tables.',
+    canHaveLuck: true, maxLuck: 99, isBot: false
+  },
+  'Standard Bot': {
+    reactions: 2, speed: '4"', combat: 1, toughness: 4, savvy: 2,
+    traits: 'No Background/Motivation/Class rolls. 6+ Armor Saving Throw. No XP (upgraded with credits). No implants/consumables. Cannot be subject to Character Events.',
+    canHaveLuck: false, maxLuck: 0, isBot: true
+  },
+  'Engineer': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 2, savvy: 1,
+    traits: '+1 to repair rolls. Toughness can never exceed 4 (including equipment).',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  "K'Erin": {
+    reactions: 1, speed: '4"', combat: 0, toughness: 4, savvy: 0,
+    traits: 'Roll twice when Brawling, pick better. Must engage enemies in Brawl if within base movement at start of turn.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Soulless': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 4, savvy: 1,
+    traits: '6+ Armor Saving Throw. No consumables/implants; uses Bot Injury Table. Can earn XP normally. May have Bot Upgrades at 1.5× cost (rounded up).',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Precursor': {
+    reactions: 1, speed: '5"', combat: 0, toughness: 2, savvy: 0,
+    traits: 'When subject to a Character Event, roll twice and pick preferred result. May spend 1 Story Point to avoid the event entirely.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Feral': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'If this character takes part in a battle, all enemy-imposed penalties to Seize the Initiative are ignored. If Reaction Roll only scores a single 1, it must go to a Feral if possible.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Swift': {
+    reactions: 1, speed: '5"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'Can glide down as a Movement Action (safe at distance = height difference). Can leap gaps up to 4" wide. Can jump from any height without damage as a free action. When firing multiple-shot weapons, all shots must target the same target.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'De-converted': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: '6+ Armor Saving Throw. May have up to 3 implants. Savvy can never be improved. Motivation is always Revenge.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Unity Agent': {
+    reactions: 2, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'Call in a Favor: Each campaign turn roll 2D6. On 10–12: remove a Rival, gain a Quest Rumor, or gain a Patron. On 2–4: must travel to next planet (or lose this trait). Motivation is always Order.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Mysterious Past': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'Treated as Baseline Human, but roll TWICE on Background Table and apply both results. Any bonus Story Points from Background/Motivation/Class tables are ignored.',
+    canHaveLuck: true, maxLuck: 99, isBot: false
+  },
+  'Hakshan': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'Roll Background, Motivation, and Class normally. Additionally automatically has the Truth motivation (two motivations).',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Stalker': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'Teleport: As Alternative Movement, roll 1D6" and reposition anywhere within range. Can still act normally. Teleport range can be increased with XP (4 XP each, +1" per purchase, max 2 times).',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Hulker': {
+    reactions: 1, speed: '4"', combat: 1, toughness: 5, savvy: 0,
+    traits: 'When shooting, Combat Skill is always treated as +0 (no bonuses). Ignores Clumsy and Heavy weapon traits. Class Table results of Technician, Scientist, or Hacker are treated as Primitive.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Hopeful Rookie': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'Begin with 1 Luck. Gain 1 bonus XP each game where they are not a casualty. First casualty (after losing Luck): lose all Luck permanently, and no longer receive bonus XP.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Genetic Uplift': {
+    reactions: 2, speed: '5"', combat: 1, toughness: 4, savvy: 1,
+    traits: 'Background rolls granting bonus credits are ignored. Crew receives 1 additional Rival.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Mutant': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'Cannot be sent to Recruit or Find a Patron tasks. Background is always Lower Megacity Class.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Assault Bot': {
+    reactions: 2, speed: '4"', combat: 1, toughness: 4, savvy: 0,
+    traits: '5+ Armor Saving Throw. Ignores Clumsy and Heavy weapon traits. No Background, Motivation, or Class. Cannot be upgraded.',
+    canHaveLuck: false, maxLuck: 0, isBot: true
+  },
+  'Manipulator': {
+    reactions: 2, speed: '4"', combat: 0, toughness: 3, savvy: 1,
+    traits: 'Cannot enter a Brawl voluntarily. May fire 2 Pistols in same round (separate targets). Each campaign turn when crew earns story points, roll 1D6 per Manipulator — each 6 grants +1 bonus story point. Background is always Bureaucrat.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Primitive': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'Cannot benefit from gun sights or fire above 8" range. All Melee weapons count as Elegant. Background is always Primitive or Regressed World.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Feeler': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'Roll twice on the Motivation Table and receive benefits of both rolls. If they ever fight another crew member, they have a mental breakdown and leave immediately.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Emo-suppressed': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'Will never voluntarily leave the crew. Can ignore events requiring fights with locals or crew. Can never receive Luck points. Motivation is always Survival.',
+    canHaveLuck: false, maxLuck: 0, isBot: false
+  },
+  'Minor Alien': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'Background/Motivation/Class results granting bonus credits or story points are reduced by 1. Roll 1D6: chosen ability score (1=Reactions, 2-3=Speed, 4=Combat, 5=Toughness, 6=Savvy) has XP cost reduced by 1.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Traveler': {
+    reactions: 3, speed: '4"', combat: 0, toughness: 4, savvy: 2,
+    traits: 'Begin with +2 story points and 2 Quest Rumors. Speed is +2" when moving directly away from a visible enemy. After every battle, roll 2D6: on 2 they disappear permanently (crew gains 2 story points); on 11-12 crew immediately receives a Quest. Motivation is always Truth.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Empath': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'When sent on Recruit or Find a Patron tasks, add +1 to the roll. Cannot be given implants without losing this ability.',
+    canHaveLuck: true, maxLuck: 1, isBot: false
+  },
+  'Bio-upgrade': {
+    reactions: 1, speed: '4"', combat: 0, toughness: 3, savvy: 0,
+    traits: 'May have up to 4 implants and can benefit from 2 of the same implant. If Background/Motivation/Class produce bonus credits, receive 2 credits less.',
+    canHaveLuck: true, maxLuck: 99, isBot: false
+  },
+};
+
+const BACKGROUNDS = [
+  'Peaceful, High-Tech Colony',    'Giant, Overcrowded, Dystopian City',
+  'Low-Tech Colony',               'Mining Colony',
+  'Military Brat',                 'Space Station',
+  'Military Outpost',              'Drifter',
+  'Lower Megacity Class',          'Wealthy Merchant Family',
+  'Frontier Gang',                 'Religious Cult',
+  'War-Torn Hell-Hole',            'Tech Guild',
+  'Subjugated Colony on Alien World', 'Long-Term Space Mission',
+  'Research Outpost',              'Primitive or Regressed World',
+  'Orphan Utility Program',        'Isolationist Enclave',
+  'Comfortable Megacity Class',    'Industrial World',
+  'Bureaucrat',                    'Wasteland Nomads',
+  'Alien Culture',
+];
+
+const MOTIVATIONS = [
+  'Wealth', 'Fame', 'Glory', 'Survival', 'Escape', 'Adventure',
+  'Truth', 'Technology', 'Discovery', 'Loyalty', 'Revenge', 'Romance',
+  'Faith', 'Political', 'Power', 'Order', 'Freedom',
+];
+
+const CLASSES = [
+  'Working Class', 'Technician', 'Scientist', 'Hacker', 'Soldier',
+  'Mercenary', 'Agitator', 'Primitive', 'Artist', 'Negotiator',
+  'Trader', 'Starship Crew', 'Petty Criminal', 'Ganger', 'Scoundrel',
+  'Enforcer', 'Special Agent', 'Troubleshooter', 'Bounty Hunter',
+  'Nomad', 'Explorer', 'Punk', 'Scavenger',
+];
+
+const ALL_WEAPONS = [
+  // Low-tech
+  { name: 'Handgun',           range: '12"', shots: 1, damage: 0, traits: 'Pistol' },
+  { name: 'Scrap Pistol',      range: '9"',  shots: 1, damage: 0, traits: 'Pistol' },
+  { name: 'Machine Pistol',    range: '8"',  shots: 2, damage: 0, traits: 'Pistol, Focused' },
+  { name: 'Colony Rifle',      range: '18"', shots: 1, damage: 0, traits: '—' },
+  { name: 'Shotgun',           range: '12"', shots: 2, damage: 1, traits: 'Focused' },
+  { name: 'Hunting Rifle',     range: '30"', shots: 1, damage: 1, traits: 'Heavy' },
+  { name: 'Blade',             range: 'Brawl', shots: 0, damage: 0, traits: 'Melee' },
+  { name: 'Brutal Melee Weapon', range: 'Brawl', shots: 0, damage: 1, traits: 'Melee, Clumsy' },
+  // Military
+  { name: 'Military Rifle',    range: '24"', shots: 1, damage: 0, traits: '—' },
+  { name: 'Infantry Laser',    range: '30"', shots: 1, damage: 0, traits: 'Snap Shot' },
+  { name: "Marksman's Rifle",  range: '36"', shots: 1, damage: 0, traits: 'Heavy' },
+  { name: 'Needle Rifle',      range: '18"', shots: 2, damage: 0, traits: 'Critical' },
+  { name: 'Auto Rifle',        range: '24"', shots: 2, damage: 0, traits: '—' },
+  { name: 'Rattle Gun',        range: '24"', shots: 3, damage: 0, traits: 'Heavy' },
+  { name: 'Boarding Saber',    range: 'Brawl', shots: 0, damage: 1, traits: 'Melee, Elegant' },
+  { name: 'Shatter Axe',       range: 'Brawl', shots: 0, damage: 2, traits: 'Melee' },
+  // High-tech
+  { name: 'Dueling Pistol',    range: '8"',  shots: 1, damage: 0, traits: 'Pistol, Critical' },
+  { name: 'Hand Cannon',       range: '8"',  shots: 1, damage: 2, traits: 'Pistol' },
+  { name: 'Hand Laser',        range: '12"', shots: 1, damage: 0, traits: 'Snap Shot, Pistol' },
+  { name: 'Beam Pistol',       range: '10"', shots: 1, damage: 1, traits: 'Pistol, Critical' },
+  { name: 'Blast Pistol',      range: '8"',  shots: 1, damage: 1, traits: 'Pistol' },
+  { name: 'Blast Rifle',       range: '16"', shots: 1, damage: 1, traits: '—' },
+  { name: 'Plasma Rifle',      range: '20"', shots: 2, damage: 1, traits: 'Focused, Piercing' },
+  { name: 'Glare Sword',       range: 'Brawl', shots: 0, damage: 0, traits: 'Melee, Elegant, Piercing' },
+  // Other
+  { name: 'Cling Fire Pistol', range: '12"', shots: 2, damage: 1, traits: 'Focused, Terrifying' },
+  { name: 'Dazzle Grenade',    range: '6"',  shots: 1, damage: 0, traits: 'Area, Stun, Single use' },
+  { name: 'Flak Gun',          range: '8"',  shots: 2, damage: 1, traits: 'Focused, Critical' },
+  { name: 'Frakk Grenade',     range: '6"',  shots: 2, damage: 0, traits: 'Heavy, Area, Single use' },
+  { name: 'Fury Rifle',        range: '24"', shots: 1, damage: 2, traits: 'Heavy, Piercing' },
+  { name: 'Hand Flamer',       range: '12"', shots: 2, damage: 1, traits: 'Focused, Area' },
+  { name: 'Hold Out Pistol',   range: '4"',  shots: 1, damage: 0, traits: 'Pistol, Melee' },
+  { name: 'Hyper Blaster',     range: '24"', shots: 3, damage: 1, traits: '—' },
+  { name: 'Power Claw',        range: 'Brawl', shots: 0, damage: 3, traits: 'Melee, Clumsy' },
+  { name: 'Ripper Sword',      range: 'Brawl', shots: 0, damage: 1, traits: 'Melee' },
+  { name: 'Shell Gun',         range: '30"', shots: 2, damage: 0, traits: 'Heavy, Area' },
+  { name: 'Suppression Maul',  range: 'Brawl', shots: 0, damage: 1, traits: 'Melee, Impact' },
+  { name: 'Custom / Other',    range: '', shots: 0, damage: 0, traits: '' },
+];
+
+// =====================================================================
+// STATE
+// =====================================================================
+let crew = {
+  name: '', credits: 0, storyPoints: 0, questRumors: 0, patrons: 0, rivals: 0,
+  met: '', characterizedAs: '', notes: '', stash: '',
+  ship: { name: '', type: '', hull: '', debt: 0, trait: '', upgrades: '' },
+  members: [],
+};
+let selectedIndex = null;
+let memberIdCounter = 0;
+
+function newMember() {
+  return {
+    id: memberIdCounter++,
+    name: 'Unknown',
+    species: 'Baseline Human',
+    isCapitain: false,
+    reactions: 1,
+    speed: '4"',
+    combat: 0,
+    toughness: 3,
+    savvy: 0,
+    luck: 0,
+    xp: 0,
+    background: '',
+    motivation: '',
+    charClass: '',
+    weapons: [],
+    gear: [],
+    notes: '',
+    implants: '',
+    armor: '',
+  };
+}
+
+// =====================================================================
+// RENDERING
+// =====================================================================
+function renderRoster() {
+  const list = document.getElementById('roster-list');
+  if (crew.members.length === 0) {
+    list.innerHTML = '<div style="color:var(--text3);font-family:var(--font-mono);font-size:0.65rem;padding:0.5rem;text-align:center">No crew members yet</div>';
+    return;
+  }
+  list.innerHTML = crew.members.map((m, i) => `
+    <div class="roster-item${i === selectedIndex ? ' active' : ''}${m.isCapitain ? ' is-captain' : ''}" onclick="selectMember(${i})">
+      <div>
+        <div class="roster-name">${m.name || 'Unknown'}${m.isCapitain ? ' <span class="captain-badge">CPT</span>' : ''}</div>
+        <div class="roster-type">${m.species}</div>
+      </div>
+      <div class="roster-actions">
+        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); removeMember(${i})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectMember(index) {
+  selectedIndex = index;
+  renderRoster();
+  renderCharPanel();
+}
+
+function renderCharPanel() {
+  const panel = document.getElementById('char-view');
+  if (selectedIndex === null || !crew.members[selectedIndex]) {
+    panel.innerHTML = `<div class="empty-state"><h2>NO CREW SELECTED</h2><p>Select a crew member from the roster.</p></div>`;
+    return;
+  }
+  const m = crew.members[selectedIndex];
+  const sd = SPECIES_DATA[m.species] || {};
+
+  panel.innerHTML = `
+    <div class="char-header">
+      <div class="char-header-info">
+        <div class="char-header-name">${m.name || 'Unnamed'}</div>
+        <div class="char-header-type">${m.species}</div>
+      </div>
+      <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+        ${m.isCapitain ? '<span class="captain-badge">⭐ Captain</span>' : `<button class="btn btn-sm" onclick="setCapitain(${selectedIndex})">Set as Captain</button>`}
+      </div>
+    </div>
+
+    <!-- Identity -->
+    <div class="char-section">
+      <div class="char-section-title">Identity</div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="fl">Name</label>
+          <input type="text" value="${escHtml(m.name)}" onchange="updateField(${selectedIndex},'name',this.value)">
+        </div>
+        <div class="form-group">
+          <label class="fl">Species / Type</label>
+          <select onchange="updateSpecies(${selectedIndex}, this.value)">
+            <optgroup label="Human">
+              <option${m.species==='Baseline Human'?' selected':''}>Baseline Human</option>
+            </optgroup>
+            <optgroup label="Bot">
+              <option${m.species==='Standard Bot'?' selected':''}>Standard Bot</option>
+              <option${m.species==='Assault Bot'?' selected':''}>Assault Bot</option>
+            </optgroup>
+            <optgroup label="Primary Alien">
+              <option${m.species==='Engineer'?' selected':''}>Engineer</option>
+              <option${m.species==="K'Erin"?' selected':''}>K'Erin</option>
+              <option${m.species==='Soulless'?' selected':''}>Soulless</option>
+              <option${m.species==='Precursor'?' selected':''}>Precursor</option>
+              <option${m.species==='Feral'?' selected':''}>Feral</option>
+              <option${m.species==='Swift'?' selected':''}>Swift</option>
+            </optgroup>
+            <optgroup label="Strange Character">
+              <option${m.species==='De-converted'?' selected':''}>De-converted</option>
+              <option${m.species==='Unity Agent'?' selected':''}>Unity Agent</option>
+              <option${m.species==='Mysterious Past'?' selected':''}>Mysterious Past</option>
+              <option${m.species==='Hakshan'?' selected':''}>Hakshan</option>
+              <option${m.species==='Stalker'?' selected':''}>Stalker</option>
+              <option${m.species==='Hulker'?' selected':''}>Hulker</option>
+              <option${m.species==='Hopeful Rookie'?' selected':''}>Hopeful Rookie</option>
+              <option${m.species==='Genetic Uplift'?' selected':''}>Genetic Uplift</option>
+              <option${m.species==='Mutant'?' selected':''}>Mutant</option>
+              <option${m.species==='Manipulator'?' selected':''}>Manipulator</option>
+              <option${m.species==='Primitive'?' selected':''}>Primitive</option>
+              <option${m.species==='Feeler'?' selected':''}>Feeler</option>
+              <option${m.species==='Emo-suppressed'?' selected':''}>Emo-suppressed</option>
+              <option${m.species==='Minor Alien'?' selected':''}>Minor Alien</option>
+              <option${m.species==='Traveler'?' selected':''}>Traveler</option>
+              <option${m.species==='Empath'?' selected':''}>Empath</option>
+              <option${m.species==='Bio-upgrade'?' selected':''}>Bio-upgrade</option>
+            </optgroup>
+          </select>
+        </div>
+        ${!sd.isBot ? `
+        <div class="form-group">
+          <label class="fl">Background</label>
+          <select onchange="updateField(${selectedIndex},'background',this.value)">
+            <option value="">— Select —</option>
+            ${BACKGROUNDS.map(b => `<option${m.background===b?' selected':''}>${b}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="fl">Motivation</label>
+          <select onchange="updateField(${selectedIndex},'motivation',this.value)">
+            <option value="">— Select —</option>
+            ${MOTIVATIONS.map(b => `<option${m.motivation===b?' selected':''}>${b}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="fl">Class</label>
+          <select onchange="updateField(${selectedIndex},'charClass',this.value)">
+            <option value="">— Select —</option>
+            ${CLASSES.map(b => `<option${m.charClass===b?' selected':''}>${b}</option>`).join('')}
+          </select>
+        </div>
+        ` : `<div class="info-box span-2">Bots do not roll on Background, Motivation, or Class tables.</div>`}
+        <div class="form-group">
+          <label class="fl">XP</label>
+          <input type="number" value="${m.xp}" onchange="updateField(${selectedIndex},'xp',+this.value)" min="0">
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="char-section">
+      <div class="char-section-title">
+        Ability Scores
+        <button class="btn btn-sm" onclick="applyBaseStats(${selectedIndex})">Apply Base Stats</button>
+      </div>
+      <div class="stats-row">
+        ${statBox('Reactions', m.reactions, selectedIndex, 'reactions')}
+        ${statBox('Speed', m.speed, selectedIndex, 'speed')}
+        ${statBox('Combat', m.combat, selectedIndex, 'combat', true)}
+        ${statBox('Toughness', m.toughness, selectedIndex, 'toughness')}
+        ${statBox('Savvy', m.savvy, selectedIndex, 'savvy', true)}
+      </div>
+      <div style="margin-top:1rem; display:flex; align-items:center; gap:1rem;">
+        <div>
+          <div class="fl" style="margin-bottom:4px">Luck Points</div>
+          <div class="luck-dots" id="luck-dots-${selectedIndex}">
+            ${renderLuckDots(m, selectedIndex)}
+          </div>
+        </div>
+        <div>
+          <div class="fl" style="margin-bottom:4px">Armor Save</div>
+          <input type="text" value="${escHtml(m.armor)}" placeholder="None" onchange="updateField(${selectedIndex},'armor',this.value)" style="width:80px">
+        </div>
+        <div style="flex:1">
+          <div class="fl" style="margin-bottom:4px">Implants</div>
+          <input type="text" value="${escHtml(m.implants)}" placeholder="None" onchange="updateField(${selectedIndex},'implants',this.value)">
+        </div>
+      </div>
+    </div>
+
+    <!-- Species Traits -->
+    ${sd.traits ? `
+    <div class="char-section">
+      <div class="char-section-title">Species Rules & Traits</div>
+      <div class="traits-info">${sd.traits}</div>
+    </div>` : ''}
+
+    <!-- Weapons -->
+    <div class="char-section">
+      <div class="char-section-title">
+        Weapons
+        <button class="btn btn-sm" onclick="addWeapon(${selectedIndex})">+ Add Weapon</button>
+      </div>
+      <table class="weapons-table">
+        <thead>
+          <tr>
+            <th>Weapon</th>
+            <th>Range</th>
+            <th>Shots</th>
+            <th>Dmg</th>
+            <th>Traits</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="weapons-body-${selectedIndex}">
+          ${renderWeaponRows(m, selectedIndex)}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Gear -->
+    <div class="char-section">
+      <div class="char-section-title">
+        Gear & Equipment
+        <button class="btn btn-sm" onclick="addGear(${selectedIndex})">+ Add</button>
+      </div>
+      <div class="gear-list" id="gear-list-${selectedIndex}">
+        ${renderGearList(m, selectedIndex)}
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="char-section">
+      <div class="char-section-title">Notes</div>
+      <textarea rows="4" onchange="updateField(${selectedIndex},'notes',this.value)">${escHtml(m.notes)}</textarea>
+    </div>
+  `;
+}
+
+function statBox(label, val, idx, field, signed=false) {
+  const display = signed && +val >= 0 ? `+${val}` : val;
+  return `
+  <div class="stat-box">
+    <div class="stat-label">${label}</div>
+    <input class="stat-input" type="text" value="${display}" onchange="updateField(${idx},'${field}',this.value)">
+  </div>`;
+}
+
+function renderLuckDots(m, idx) {
+  const sd = SPECIES_DATA[m.species] || {};
+  const max = sd.canHaveLuck ? Math.min(sd.maxLuck, 5) : 0;
+  if (max === 0) return '<span style="color:var(--text3);font-size:0.7rem;font-family:var(--font-mono)">N/A</span>';
+  let html = '';
+  for (let i = 0; i < max; i++) {
+    html += `<div class="luck-dot${i < m.luck ? ' filled' : ''}" onclick="toggleLuck(${idx},${i})"></div>`;
+  }
+  if (sd.maxLuck > 5) {
+    html += `<input type="number" value="${m.luck}" min="0" style="width:45px;margin-left:6px" onchange="updateField(${idx},'luck',+this.value)">`;
+  }
+  return html;
+}
+
+function toggleLuck(idx, dotIdx) {
+  const m = crew.members[idx];
+  if (m.luck > dotIdx) m.luck = dotIdx;
+  else m.luck = dotIdx + 1;
+  document.getElementById(`luck-dots-${idx}`).innerHTML = renderLuckDots(m, idx);
+  autoSave();
+}
+
+function renderWeaponRows(m, idx) {
+  if (!m.weapons.length) return `<tr><td colspan="6" style="color:var(--text3);font-size:0.75rem;padding:0.5rem">No weapons assigned</td></tr>`;
+  return m.weapons.map((w, wi) => `
+    <tr>
+      <td>
+        <select style="min-width:140px" onchange="pickWeapon(${idx},${wi},this.value)">
+          ${ALL_WEAPONS.map(aw => `<option${w.name===aw.name?' selected':''}>${aw.name}</option>`).join('')}
+        </select>
+        ${w.name === 'Custom / Other' ? `<input type="text" value="${escHtml(w.customName||'')}" placeholder="Custom name" onchange="updateWeaponField(${idx},${wi},'customName',this.value)" style="margin-top:3px">` : ''}
+      </td>
+      <td><input type="text" value="${escHtml(w.range)}" onchange="updateWeaponField(${idx},${wi},'range',this.value)" style="width:55px"></td>
+      <td><input type="number" value="${w.shots}" onchange="updateWeaponField(${idx},${wi},'shots',+this.value)" style="width:40px"></td>
+      <td><input type="number" value="${w.damage}" onchange="updateWeaponField(${idx},${wi},'damage',+this.value)" style="width:40px"></td>
+      <td><input type="text" value="${escHtml(w.traits)}" onchange="updateWeaponField(${idx},${wi},'traits',this.value)"></td>
+      <td><button class="btn btn-sm btn-danger" onclick="removeWeapon(${idx},${wi})">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+function renderGearList(m, idx) {
+  if (!m.gear.length) return `<div style="color:var(--text3);font-size:0.75rem;font-family:var(--font-mono)">No gear assigned</div>`;
+  return m.gear.map((g, gi) => `
+    <div class="gear-item">
+      <input type="text" value="${escHtml(g)}" onchange="updateGear(${idx},${gi},this.value)">
+      <button class="btn btn-sm" onclick="removeGear(${idx},${gi})">✕</button>
+    </div>
+  `).join('');
+}
+
+// =====================================================================
+// ACTIONS
+// =====================================================================
+function addMember() {
+  const m = newMember();
+  crew.members.push(m);
+  selectedIndex = crew.members.length - 1;
+  renderRoster();
+  renderCharPanel();
+  autoSave();
+}
+
+function removeMember(i) {
+  if (!confirm(`Remove ${crew.members[i].name || 'this member'}?`)) return;
+  crew.members.splice(i, 1);
+  if (selectedIndex >= crew.members.length) selectedIndex = crew.members.length - 1;
+  if (selectedIndex < 0) selectedIndex = null;
+  renderRoster();
+  renderCharPanel();
+  autoSave();
+}
+
+function setCapitain(i) {
+  crew.members.forEach((m, idx) => m.isCapitain = idx === i);
+  renderRoster();
+  renderCharPanel();
+  autoSave();
+}
+
+function updateField(idx, field, value) {
+  crew.members[idx][field] = value;
+  renderRoster();
+  autoSave();
+}
+
+function updateSpecies(idx, value) {
+  crew.members[idx].species = value;
+  const sd = SPECIES_DATA[value];
+  if (sd) {
+    if (!confirm('Apply base stats for ' + value + '?')) { renderCharPanel(); return; }
+    crew.members[idx].reactions = sd.reactions;
+    crew.members[idx].speed = sd.speed;
+    crew.members[idx].combat = sd.combat;
+    crew.members[idx].toughness = sd.toughness;
+    crew.members[idx].savvy = sd.savvy;
+    if (!sd.canHaveLuck) crew.members[idx].luck = 0;
+    // Apply armor saves
+    if (['Soulless','De-converted','Standard Bot'].includes(value)) crew.members[idx].armor = '6+';
+    else if (value === 'Assault Bot') crew.members[idx].armor = '5+';
+  }
+  renderCharPanel();
+  autoSave();
+}
+
+function applyBaseStats(idx) {
+  const m = crew.members[idx];
+  const sd = SPECIES_DATA[m.species];
+  if (!sd) return;
+  m.reactions = sd.reactions;
+  m.speed = sd.speed;
+  m.combat = sd.combat;
+  m.toughness = sd.toughness;
+  m.savvy = sd.savvy;
+  renderCharPanel();
+  autoSave();
+}
+
+function addWeapon(idx) {
+  const def = ALL_WEAPONS[0];
+  crew.members[idx].weapons.push({ ...def });
+  document.getElementById(`weapons-body-${idx}`).innerHTML = renderWeaponRows(crew.members[idx], idx);
+  autoSave();
+}
+
+function removeWeapon(idx, wi) {
+  crew.members[idx].weapons.splice(wi, 1);
+  document.getElementById(`weapons-body-${idx}`).innerHTML = renderWeaponRows(crew.members[idx], idx);
+  autoSave();
+}
+
+function pickWeapon(idx, wi, name) {
+  const w = ALL_WEAPONS.find(x => x.name === name) || ALL_WEAPONS[0];
+  crew.members[idx].weapons[wi] = { ...w };
+  document.getElementById(`weapons-body-${idx}`).innerHTML = renderWeaponRows(crew.members[idx], idx);
+  autoSave();
+}
+
+function updateWeaponField(idx, wi, field, val) {
+  crew.members[idx].weapons[wi][field] = val;
+  autoSave();
+}
+
+function addGear(idx) {
+  crew.members[idx].gear.push('');
+  document.getElementById(`gear-list-${idx}`).innerHTML = renderGearList(crew.members[idx], idx);
+  autoSave();
+}
+
+function removeGear(idx, gi) {
+  crew.members[idx].gear.splice(gi, 1);
+  document.getElementById(`gear-list-${idx}`).innerHTML = renderGearList(crew.members[idx], idx);
+  autoSave();
+}
+
+function updateGear(idx, gi, val) {
+  crew.members[idx].gear[gi] = val;
+  autoSave();
+}
+
+function updateCrew() {
+  crew.name = document.getElementById('crew-name').value;
+  crew.credits = +document.getElementById('crew-credits').value;
+  crew.storyPoints = +document.getElementById('crew-story').value;
+  crew.questRumors = +document.getElementById('crew-rumors').value;
+  crew.patrons = +document.getElementById('crew-patrons').value;
+  crew.rivals = +document.getElementById('crew-rivals').value;
+  crew.met = document.getElementById('crew-met').value;
+  crew.characterizedAs = document.getElementById('crew-char').value;
+  crew.notes = document.getElementById('crew-notes').value;
+  crew.stash = document.getElementById('crew-stash').value;
+  crew.ship.name = document.getElementById('ship-name').value;
+  crew.ship.hull = document.getElementById('ship-hull').value;
+  crew.ship.debt = +document.getElementById('ship-debt').value;
+  crew.ship.trait = document.getElementById('ship-trait').value;
+  crew.ship.upgrades = document.getElementById('ship-upgrades').value;
+  autoSave();
+}
+
+function updateShipStats() {
+  const val = document.getElementById('ship-type').value;
+  if (!val) return;
+  const parts = val.split('|');
+  crew.ship.type = parts[0];
+  document.getElementById('ship-hull').value = parts[1] || '';
+  document.getElementById('ship-trait').value = parts[2] || '';
+  updateCrew();
+}
+
+// =====================================================================
+// SAVE / LOAD
+// =====================================================================
+function autoSave() {
+  try { localStorage.setItem('5pfh_crew', JSON.stringify(crew)); } catch(e) {}
+}
+
+function saveCrew() {
+  const json = JSON.stringify(crew, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (crew.name || 'crew') + '.json';
+  a.click();
+}
+
+function loadCrew() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const loaded = JSON.parse(ev.target.result);
+        crew = loaded;
+        memberIdCounter = crew.members.reduce((mx, m) => Math.max(mx, (m.id||0)+1), 0);
+        populateSidebar();
+        selectedIndex = crew.members.length > 0 ? 0 : null;
+        renderRoster();
+        renderCharPanel();
+      } catch(e) { alert('Failed to load file: ' + e.message); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function populateSidebar() {
+  document.getElementById('crew-name').value = crew.name || '';
+  document.getElementById('crew-credits').value = crew.credits || 0;
+  document.getElementById('crew-story').value = crew.storyPoints || 0;
+  document.getElementById('crew-rumors').value = crew.questRumors || 0;
+  document.getElementById('crew-patrons').value = crew.patrons || 0;
+  document.getElementById('crew-rivals').value = crew.rivals || 0;
+  document.getElementById('crew-met').value = crew.met || '';
+  document.getElementById('crew-char').value = crew.characterizedAs || '';
+  document.getElementById('crew-notes').value = crew.notes || '';
+  document.getElementById('crew-stash').value = crew.stash || '';
+  document.getElementById('ship-name').value = crew.ship?.name || '';
+  document.getElementById('ship-hull').value = crew.ship?.hull || '';
+  document.getElementById('ship-debt').value = crew.ship?.debt || 0;
+  document.getElementById('ship-trait').value = crew.ship?.trait || '';
+  document.getElementById('ship-upgrades').value = crew.ship?.upgrades || '';
+}
+
+// =====================================================================
+// EXPORT TXT
+// =====================================================================
+function exportTXT() {
+  let lines = [];
+  const sep = '═'.repeat(60);
+  const thin = '─'.repeat(60);
+  lines.push('FIVE PARSECS FROM HOME — CREW LOG');
+  lines.push(sep);
+  lines.push(`Crew Name:    ${crew.name || '(unnamed)'}`);
+  lines.push(`Credits:      ${crew.credits}     Story Points: ${crew.storyPoints}`);
+  lines.push(`Quest Rumors: ${crew.questRumors}     Patrons: ${crew.patrons}     Rivals: ${crew.rivals}`);
+  if (crew.met) lines.push(`We met through: ${crew.met}`);
+  if (crew.characterizedAs) lines.push(`Best characterized as: ${crew.characterizedAs}`);
+  if (crew.notes) { lines.push(''); lines.push('NOTES:'); lines.push(crew.notes); }
+  lines.push('');
+  lines.push('SHIP');
+  lines.push(thin);
+  lines.push(`Name:        ${crew.ship?.name || '(unnamed)'}`);
+  if (crew.ship?.type) lines.push(`Type:        ${crew.ship.type}`);
+  lines.push(`Hull Points: ${crew.ship?.hull || '—'}     Debt: ${crew.ship?.debt || 0} credits`);
+  if (crew.ship?.trait) lines.push(`Trait:       ${crew.ship.trait}`);
+  if (crew.ship?.upgrades) lines.push(`Upgrades:    ${crew.ship.upgrades}`);
+  if (crew.stash) { lines.push(''); lines.push('STASH'); lines.push(thin); lines.push(crew.stash); }
+  lines.push('');
+  lines.push(sep);
+  lines.push('CREW MEMBERS');
+  lines.push(sep);
+
+  crew.members.forEach((m, i) => {
+    lines.push('');
+    lines.push(`${m.isCapitain ? '[CAPTAIN] ' : ''}${m.name || 'Unknown'}`);
+    lines.push(`Species: ${m.species}`);
+    if (m.background) lines.push(`Background: ${m.background}`);
+    if (m.motivation) lines.push(`Motivation: ${m.motivation}`);
+    if (m.charClass) lines.push(`Class: ${m.charClass}`);
+    lines.push('');
+    lines.push(`  Reactions:    ${m.reactions}`);
+    lines.push(`  Speed:        ${m.speed}`);
+    const cs = +m.combat >= 0 ? `+${m.combat}` : m.combat;
+    lines.push(`  Combat Skill: ${cs}`);
+    lines.push(`  Toughness:    ${m.toughness}`);
+    const sv = +m.savvy >= 0 ? `+${m.savvy}` : m.savvy;
+    lines.push(`  Savvy:        ${sv}`);
+    lines.push(`  Luck:         ${m.luck}`);
+    lines.push(`  XP:           ${m.xp}`);
+    if (m.armor) lines.push(`  Armor Save:   ${m.armor}`);
+    if (m.implants) lines.push(`  Implants:     ${m.implants}`);
+    if (m.weapons.length) {
+      lines.push('');
+      lines.push('  WEAPONS:');
+      m.weapons.forEach(w => {
+        const name = w.customName && w.name === 'Custom / Other' ? w.customName : w.name;
+        lines.push(`    ${name.padEnd(22)} Range: ${String(w.range).padEnd(7)} Shots: ${String(w.shots).padEnd(3)} Dmg: ${w.damage}  ${w.traits}`);
+      });
+    }
+    if (m.gear.length) {
+      lines.push('');
+      lines.push('  GEAR: ' + m.gear.filter(Boolean).join(', '));
+    }
+    if (m.notes) { lines.push(''); lines.push('  Notes: ' + m.notes); }
+    lines.push(thin);
+  });
+  lines.push('');
+  lines.push('Permission is granted to make copies of this form for personal use.');
+
+  const txt = lines.join('\n');
+  const blob = new Blob([txt], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (crew.name || 'crew') + '_crew_log.txt';
+  a.click();
+}
+
+// =====================================================================
+// EXPORT PDF — calls the Python backend script
+// =====================================================================
+function exportPDF() {
+  const data = JSON.stringify(crew);
+  const blob = new Blob([data], { type: 'application/json' });
+  const reader = new FileReader();
+  reader.onload = e => {
+    // POST to local python server
+    fetch('http://localhost:5678/pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: data
+    })
+    .then(r => r.blob())
+    .then(pdfBlob => {
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (crew.name || 'crew') + '_crew_log.pdf';
+      a.click();
+    })
+    .catch(() => {
+      alert('PDF server not running.\n\nRun: python pdf_server.py\nThen try again.\n\nSee README for instructions.');
+    });
+  };
+  reader.readAsDataURL(blob);
+}
+
+// =====================================================================
+// UTILITY
+// =====================================================================
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// =====================================================================
+// INIT
+// =====================================================================
+(function init() {
+  try {
+    const saved = localStorage.getItem('5pfh_crew');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      crew = parsed;
+      memberIdCounter = crew.members.reduce((mx, m) => Math.max(mx, (m.id||0)+1), 0);
+    }
+  } catch(e) {}
+  populateSidebar();
+  renderRoster();
+  if (crew.members.length > 0) { selectedIndex = 0; renderCharPanel(); }
+  else renderCharPanel();
+})();
+</script>
+</body>
+</html>
