@@ -1429,6 +1429,7 @@ function exportTXT() {
 // EXPORT PDF — fully client-side using jsPDF
 // =====================================================================
 function exportPDF() {
+  try {
   if (typeof window.jspdf === 'undefined') {
     alert('PDF library not loaded yet. Please wait a moment and try again.');
     return;
@@ -1661,7 +1662,7 @@ function exportPDF() {
 
     // Gear
     if (m.gear && m.gear.length > 0) {
-      const gearStr = m.gear.map(g=>g.name||g).join(', ');
+      const gearStr = m.gear.map(g=>typeof g==='string'?g:(g.name||'')).filter(Boolean).join(', ');
       doc.setFontSize(5); doc.setFont('helvetica','italic'); setTextC(TEXT3);
       text(doc.splitTextToSize(gearStr, CARD_W-4)[0], cx+2, finalCy+CARD_H-3);
     }
@@ -1746,7 +1747,7 @@ function exportPDF() {
       sectionLabel('GEAR', M, py); py += 5;
       setFill(SURF); setDraw(BORDER); rect(M,py,W-2*M,10,true,true);
       doc.setFontSize(6.5); doc.setFont('helvetica','normal'); setTextC(TEXT2);
-      const gearStr = m.gear.map(g=>g.name||g).join('  ·  ');
+      const gearStr = m.gear.map(g=>typeof g==='string'?g:(g.name||'')).filter(Boolean).join('  ·  ');
       const gl = doc.splitTextToSize(gearStr, W-2*M-4);
       gl.slice(0,2).forEach((l,i)=>text(l,M+2,py+4+i*4));
       py += 13;
@@ -1757,7 +1758,7 @@ function exportPDF() {
       sectionLabel('LUCK', M, py); py += 5;
       for (let i=0; i<Math.min(m.luck,10); i++) {
         const lx = M + 2 + i*7;
-        setFill(GOLD); setDraw(GOLD); doc.circle(lx+2, py-1.5, 2, 'FD');
+        setFill(GOLD); setDraw(GOLD); doc.ellipse(lx+2, py-1.5, 2, 2, 'FD');
         doc.setFontSize(7); doc.setFont('helvetica','bold'); setTextC([13,15,20]);
         text('L', lx+2, py-0.2, {align:'center'});
       }
@@ -1794,6 +1795,10 @@ function exportPDF() {
   text('Permission is granted to make copies of this form for personal use.', W/2, H-5, {align:'center'});
 
   doc.save((crew.name||'crew').replace(/[^a-z0-9]/gi,'_').toLowerCase()+'_crew_log.pdf');
+  } catch(err) {
+    console.error('PDF export error:', err);
+    alert('PDF export failed: ' + err.message + '\n\nCheck browser console for details.');
+  }
 }
 
 // =====================================================================
