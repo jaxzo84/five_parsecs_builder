@@ -25,7 +25,7 @@
     --font-mono:  'Share Tech Mono', monospace;
   }
   /* === HIGH CONTRAST THEME === */
-  
+
   body.hc {
     --bg:       #f5f0e8;
     --surface:  #ede8e0;
@@ -1455,7 +1455,7 @@ function exportPDF() {
   };
 
   const sf = (...c) => doc.setFillColor(...c);
-  const sd = (...c) => doc.setStrokeColor(...c);
+  const sd = (...c) => doc.setDrawColor(...c);
   const st = (...c) => doc.setTextColor(...c);
   const lw = (w=.3) => doc.setLineWidth(w);
   const R  = (x,y,w,h,f,s) => doc.rect(x,y,w,h, f&&s?'FD':f?'F':'D');
