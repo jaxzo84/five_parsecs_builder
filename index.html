@@ -1449,7 +1449,7 @@ function exportPDF() {
   const TEAL  = hex('#2e7d7a'), RED    = hex('#c0392b');
 
   function setFill(c)   { doc.setFillColor(...c); }
-  function setDraw(c)   { doc.setStrokeColor(...c); }
+  function setDraw(c)   { doc.setDrawColor(...c); }
   function setTextC(c)  { doc.setTextColor(...c); }
   function rect(x,y,w,h,fill,stroke){ doc.rect(x,y,w,h, fill&&stroke?'FD':fill?'F':'D'); }
   function line(x1,y1,x2,y2,lw=0.2){ doc.setLineWidth(lw); doc.line(x1,y1,x2,y2); }
