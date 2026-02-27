@@ -1437,364 +1437,305 @@ function exportPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = 210, H = 297;
-
-  // Colour helpers
-  const hex = h => {
-    const r = parseInt(h.slice(1,3),16), g = parseInt(h.slice(3,5),16), b = parseInt(h.slice(5,7),16);
-    return [r,g,b];
+  // ── Colour palette — pure ink saver (black on white) ────────────
+  const C = {
+    bg:     [255,255,255],
+    surf:   [255,255,255],
+    surf2:  [240,240,240],
+    gold:   [0,0,0],
+    gold2:  [0,0,0],
+    text:   [0,0,0],
+    text2:  [30,30,30],
+    text3:  [80,80,80],
+    teal:   [0,0,0],
+    red:    [0,0,0],
+    border: [0,0,0],
+    cap:    [210,210,210],
   };
-  const BG    = hex('#0d0f14'), SURF   = hex('#13161e'), SURF2  = hex('#1c2030');
-  const GOLD  = hex('#d4a84b'), GOLD2  = hex('#e8c06a'), TEXT   = hex('#d8dce8');
-  const TEXT2 = hex('#8a90a8'), TEXT3  = hex('#5a6080'), BORDER = hex('#2a3045');
-  const TEAL  = hex('#2e7d7a'), RED    = hex('#c0392b');
 
-  function setFill(c)   { doc.setFillColor(...c); }
-  function setDraw(c)   { doc.setDrawColor(...c); }
-  function setTextC(c)  { doc.setTextColor(...c); }
-  function rect(x,y,w,h,fill,stroke){ doc.rect(x,y,w,h, fill&&stroke?'FD':fill?'F':'D'); }
-  function line(x1,y1,x2,y2,lw=0.2){ doc.setLineWidth(lw); doc.line(x1,y1,x2,y2); }
-  function text(str,x,y,opts={}){ doc.text(String(str||''),x,y,opts); }
-  function wrap(str, x, y, maxW, lineH=4, size=7){
-    doc.setFontSize(size);
-    const lines = doc.splitTextToSize(String(str||''), maxW);
-    lines.forEach((l,i) => text(l, x, y + i*lineH));
-    return y + lines.length * lineH;
+  const sf = (...c) => doc.setFillColor(...c);
+  const sd = (...c) => doc.setStrokeColor(...c);
+  const st = (...c) => doc.setTextColor(...c);
+  const lw = (w=.3) => doc.setLineWidth(w);
+  const R  = (x,y,w,h,f,s) => doc.rect(x,y,w,h, f&&s?'FD':f?'F':'D');
+  const L  = (x1,y1,x2,y2,w=.25) => { lw(w); sd(...C.border); doc.line(x1,y1,x2,y2); };
+  const T  = (s,x,y,opts={}) => doc.text(String(s||''), x, y, opts);
+
+  function fullBg() { sf(...C.bg); R(0,0,W,H,true,false); }
+
+  function pageHeader(label) {
+    sf(...C.surf); R(0,0,W,16,true,false);
+    sd(...C.gold); lw(.8); doc.line(0,16,W,16);
+    doc.setFont('helvetica','bold'); doc.setFontSize(13); st(...C.gold);
+    T('FIVE PARSECS FROM HOME', 10, 9);
+    doc.setFont('helvetica','normal'); doc.setFontSize(5.5); st(...C.text3);
+    T('CREW LOG — THIRD EDITION', 10, 13.5);
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); st(...C.text);
+    T(String(crew.name||'Unnamed Crew').toUpperCase(), W-10, 9, {align:'right'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(5.5); st(...C.text3);
+    T(label, W-10, 13.5, {align:'right'});
   }
 
-  // ── PAGE LAYOUT ─────────────────────────────────────────────────
-  const M = 10, COL_GAP = 5;
-  const COL_W = (W - 2*M - COL_GAP) / 2;
-  const COL1 = M, COL2 = M + COL_W + COL_GAP;
+  function sectionLabel(lbl, x, y) {
+    doc.setFontSize(5.5); doc.setFont('helvetica','bold'); st(...C.gold);
+    T(lbl.toUpperCase(), x, y);
+    sd(...C.border); lw(.2); doc.line(x, y+0.8, x+50, y+0.8);
+  }
+
+  function statBox(x, y, bw, bh, lbl, val) {
+    sf(...C.surf2); sd(...C.border); lw(.3); R(x,y,bw,bh,true,true);
+    doc.setFontSize(4.5); doc.setFont('helvetica','normal'); st(...C.text3);
+    T(lbl.toUpperCase(), x+bw/2, y+2.8, {align:'center'});
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); st(...C.gold);
+    T(String(val), x+bw/2, y+bh-1.5, {align:'center'});
+  }
+
+  function signed(n) { const v=parseFloat(n)||0; return v>=0?'+'+v:String(v); }
 
   function newPage() {
     doc.addPage();
-    setFill(BG); rect(0,0,W,H,true,false);
+    fullBg();
   }
 
-  function pageHeader(pageLabel) {
-    setFill(SURF); rect(0,0,W,18,true,false);
-    setDraw(GOLD); doc.setLineWidth(0.6); line(0,18,W,18,0.6);
-    doc.setFontSize(14); doc.setFont('helvetica','bold');
-    setTextC(GOLD); text('FIVE PARSECS FROM HOME', M, 8);
-    doc.setFontSize(6.5); doc.setFont('helvetica','normal');
-    setTextC(TEXT3); text('CREW LOG  —  THIRD EDITION', M, 13);
-    doc.setFontSize(8); doc.setFont('helvetica','bold');
-    setTextC(TEXT); text(String(crew.name||'Unnamed Crew').toUpperCase(), W-M, 8, {align:'right'});
-    doc.setFontSize(6); doc.setFont('helvetica','normal');
-    setTextC(TEXT3); text(pageLabel, W-M, 13, {align:'right'});
-  }
-
-  function sectionLabel(lbl, x, y, color=GOLD) {
-    doc.setFontSize(5.5); doc.setFont('helvetica','bold');
-    setTextC(color); text(lbl.toUpperCase(), x, y);
-    setDraw(BORDER); line(x, y+0.8, x+40, y+0.8, 0.2);
-  }
-
-  function statBox(x, y, bw, bh, lbl, val, valColor=GOLD) {
-    setFill(SURF2); setDraw(BORDER); rect(x,y,bw,bh,true,true);
-    doc.setFontSize(4.5); doc.setFont('helvetica','normal'); setTextC(TEXT3);
-    text(lbl.toUpperCase(), x+bw/2, y+2.5, {align:'center'});
-    doc.setFontSize(9); doc.setFont('helvetica','bold'); setTextC(valColor);
-    text(String(val), x+bw/2, y+bh-1.5, {align:'center'});
-  }
-
-  function signedNum(n) {
-    const v = parseFloat(n)||0;
-    return v >= 0 ? '+'+v : String(v);
-  }
-
-  // ══════════════════════════════════════════════════════════════
-  // PAGE 1: CREW OVERVIEW
-  // ══════════════════════════════════════════════════════════════
-  setFill(BG); rect(0,0,W,H,true,false);
+  // ── PAGE 1: CREW OVERVIEW ───────────────────────────────────────
+  fullBg();
   pageHeader('CREW OVERVIEW');
 
-  let y = 24;
+  const M = 10;
+  let y = 20;
 
-  // — Crew stats bar —
-  setFill(SURF); setDraw(BORDER); rect(M,y,W-2*M,12,true,true);
-  const crewStats = [
-    ['Credits', crew.credits||0],
-    ['Story Pts', crew.storyPoints||0],
-    ['Rumors', crew.questRumors||0],
-    ['Patrons', crew.patrons||0],
-    ['Rivals', crew.rivals||0],
-    ['Crew', crew.members.length],
+  // Crew stats bar
+  sf(...C.surf); sd(...C.border); lw(.3); R(M,y,W-2*M,13,true,true);
+  const cstats = [
+    ['Credits', crew.credits||0], ['Story Pts', crew.storyPoints||0],
+    ['Rumors', crew.questRumors||0], ['Patrons', crew.patrons||0],
+    ['Rivals', crew.rivals||0], ['Crew', crew.members.length],
   ];
-  const csw = (W-2*M) / crewStats.length;
-  crewStats.forEach(([lbl,val],i) => {
-    const cx = M + i*csw;
-    doc.setFontSize(4.5); doc.setFont('helvetica','normal'); setTextC(TEXT3);
-    text(lbl.toUpperCase(), cx+csw/2, y+3.5, {align:'center'});
-    doc.setFontSize(9); doc.setFont('helvetica','bold'); setTextC(GOLD);
-    text(String(val), cx+csw/2, y+9, {align:'center'});
-    if (i>0) { setDraw(BORDER); line(cx,y+1,cx,y+11,0.2); }
+  const csw = (W-2*M)/cstats.length;
+  cstats.forEach(([l,v],i) => {
+    const cx = M+i*csw;
+    doc.setFontSize(4.5); doc.setFont('helvetica','normal'); st(...C.text3);
+    T(l.toUpperCase(), cx+csw/2, y+3.5, {align:'center'});
+    doc.setFontSize(10); doc.setFont('helvetica','bold'); st(...C.gold);
+    T(String(v), cx+csw/2, y+10, {align:'center'});
+    if (i>0) { sd(...C.border); lw(.2); doc.line(cx,y+1,cx,y+12); }
   });
   y += 16;
 
-  // — Ship —
+  // Ship
   const sh = crew.ship||{};
   if (sh.type || sh.name) {
-    setFill(SURF); setDraw(BORDER); rect(M,y,W-2*M,20,true,true);
-    setFill(SURF2); rect(M,y,W-2*M,5.5,true,false);
-    doc.setFontSize(5.5); doc.setFont('helvetica','bold'); setTextC(GOLD);
-    text('SHIP', M+2, y+4);
+    sf(...C.surf); sd(...C.border); lw(.3); R(M,y,W-2*M,20,true,true);
+    sf(...C.surf2); R(M,y,W-2*M,5.5,true,false);
+    doc.setFontSize(5.5); doc.setFont('helvetica','bold'); st(...C.gold); T('SHIP',M+2,y+4);
     y += 7;
-    doc.setFontSize(8); doc.setFont('helvetica','bold'); setTextC(TEXT);
-    text(String(sh.name||'Unnamed Vessel'), M+2, y+2);
-    doc.setFontSize(6.5); doc.setFont('helvetica','normal'); setTextC(TEXT2);
-    text(String(sh.type||''), M+2, y+7);
-    // Ship stats
-    const shipItems = [['Hull',sh.hull||'—'],['Debt',sh.debt||0],['Trait',sh.trait||'—']];
-    shipItems.forEach(([l,v],i)=>{
-      const sx = W-M-60 + i*20;
-      doc.setFontSize(4.5); setTextC(TEXT3); text(l.toUpperCase(), sx+10, y+1, {align:'center'});
-      doc.setFontSize(8); doc.setFont('helvetica','bold'); setTextC(GOLD);
-      text(String(v), sx+10, y+7, {align:'center'});
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); st(...C.text);
+    T(String(sh.name||'Unnamed Vessel'), M+2, y+3);
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); st(...C.text2);
+    T(String(sh.type||''), M+2, y+8);
+    const si = [['Hull',sh.hull||'—'],['Debt',(sh.debt||0)+' cr'],['Trait',sh.trait||'—']];
+    si.forEach(([l,v],i) => {
+      const sx = W-M-65+i*22;
+      doc.setFontSize(4.5); st(...C.text3); T(l.toUpperCase(), sx+11, y+1, {align:'center'});
+      doc.setFontSize(8); doc.setFont('helvetica','bold'); st(...C.gold); T(String(v), sx+11, y+8, {align:'center'});
     });
-    if (sh.upgrades) {
-      doc.setFontSize(5.5); doc.setFont('helvetica','normal'); setTextC(TEXT3);
-      text('UPGRADES: '+String(sh.upgrades), M+2, y+12);
-    }
-    y += 22;
+    if (sh.upgrades) { doc.setFontSize(5.5); doc.setFont('helvetica','normal'); st(...C.text3); T('Upgrades: '+sh.upgrades, M+2, y+13); }
+    y += 23;
   }
 
-  // — "Met through" / "characterized as" —
+  // Flavor
   if (crew.met || crew.characterizedAs) {
-    doc.setFontSize(6); doc.setFont('helvetica','italic'); setTextC(TEXT2);
-    if (crew.met) text('We met through: '+crew.met, M, y); y += 4;
-    if (crew.characterizedAs) text('Best characterized as: '+crew.characterizedAs, M, y); y += 4;
+    doc.setFontSize(6.5); doc.setFont('helvetica','italic'); st(...C.text2);
+    if (crew.met) { T('We met through: '+crew.met, M, y); y += 4.5; }
+    if (crew.characterizedAs) { T('Best characterized as: '+crew.characterizedAs, M, y); y += 4.5; }
     y += 2;
   }
 
-  // — Stash —
+  // Stash
   if (crew.stash && crew.stash.trim()) {
     sectionLabel('STASH', M, y); y += 5;
-    setFill(SURF); setDraw(BORDER); rect(M,y,W-2*M,14,true,true);
-    doc.setFontSize(6.5); doc.setFont('helvetica','normal'); setTextC(TEXT2);
-    const stashLines = doc.splitTextToSize(crew.stash, W-2*M-4);
-    stashLines.slice(0,3).forEach((l,i) => text(l, M+2, y+4+i*4));
+    sf(...C.surf); sd(...C.border); lw(.3); R(M,y,W-2*M,14,true,true);
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); st(...C.text2);
+    doc.splitTextToSize(crew.stash, W-2*M-4).slice(0,3).forEach((l,i) => T(l,M+2,y+4+i*4.2));
     y += 17;
   }
 
-  // — Notes —
+  // Notes
   if (crew.notes && crew.notes.trim()) {
     sectionLabel('CREW NOTES', M, y); y += 5;
-    setFill(SURF); setDraw(BORDER); rect(M,y,W-2*M,12,true,true);
-    doc.setFontSize(6.5); doc.setFont('helvetica','normal'); setTextC(TEXT2);
-    const nlines = doc.splitTextToSize(crew.notes, W-2*M-4);
-    nlines.slice(0,2).forEach((l,i) => text(l, M+2, y+4+i*4));
+    sf(...C.surf); sd(...C.border); lw(.3); R(M,y,W-2*M,12,true,true);
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); st(...C.text2);
+    doc.splitTextToSize(crew.notes, W-2*M-4).slice(0,2).forEach((l,i) => T(l,M+2,y+4+i*4.2));
     y += 15;
   }
 
-  // ── CREW ROSTER GRID on page 1 (up to 3 per row) ───────────────
+  // Crew roster grid (3 per row)
   y += 3;
   sectionLabel('CREW ROSTER', M, y); y += 5;
 
-  const CARD_W = (W-2*M-2*COL_GAP)/3;
-  const CARD_H = 42;
-  const CARDS_PER_ROW = 3;
+  const GAP = 3.5;
+  const CW = (W-2*M-2*GAP)/3;
+  const CH = 46;
+  let cardY = y;
 
   crew.members.forEach((m, idx) => {
-    const col = idx % CARDS_PER_ROW;
-    const row = Math.floor(idx / CARDS_PER_ROW);
-    const cx = M + col*(CARD_W+3.5);
-    const cy = y + row*(CARD_H+3);
-
-    if (cy + CARD_H > H-12) {
-      newPage();
-      pageHeader('CREW ROSTER (cont.)');
-      y = 24;
+    const col = idx % 3;
+    if (col === 0 && idx > 0) cardY += CH + 3;
+    if (cardY + CH > H-10) {
+      newPage(); pageHeader('CREW ROSTER (cont.)'); cardY = 20;
     }
-
-    const finalCy = cy > H-12 ? y : cy;
-
-    // Card background
+    const cx = M + col*(CW+GAP);
     const isCap = m.isCapitain;
-    setFill(SURF); setDraw(isCap ? GOLD : BORDER);
-    doc.setLineWidth(isCap ? 0.6 : 0.3);
-    rect(cx, finalCy, CARD_W, CARD_H, true, true);
 
+    // Card
+    sf(...C.surf); sd(...isCap ? C.gold : C.border); lw(isCap?.6:.3);
+    R(cx, cardY, CW, CH, true, true);
     // Title bar
-    setFill(isCap ? [45,35,8] : SURF2);
-    rect(cx, finalCy, CARD_W, 7, true, false);
+    sf(...isCap ? C.cap : C.surf2); R(cx, cardY, CW, 7, true, false);
     doc.setFontSize(8); doc.setFont('helvetica','bold');
-    setTextC(isCap ? GOLD : TEXT);
-    text((isCap ? '★ ' : '') + (m.name||'Unknown'), cx+2, finalCy+5);
-    doc.setFontSize(5); doc.setFont('helvetica','normal'); setTextC(TEXT3);
-    text(m.species||'', cx+CARD_W-2, finalCy+5, {align:'right'});
+    st(...isCap ? C.gold : C.text);
+    T((isCap?'★ ':'')+(m.name||'Unknown'), cx+2, cardY+5);
+    doc.setFontSize(5); doc.setFont('helvetica','normal'); st(...C.text3);
+    T(m.species||'', cx+CW-2, cardY+5, {align:'right'});
 
-    // Stats row
-    const stats = [
-      ['React', m.reactions||1],
-      ['Speed', m.speed||'4"'],
-      ['Combat', signedNum(m.combat)],
-      ['Tough', m.toughness||3],
-      ['Savvy', signedNum(m.savvy)],
-      ['Luck', m.luck||0],
-      ['XP', m.xp||0],
-    ];
-    const sw2 = CARD_W / stats.length;
-    stats.forEach(([lbl,val],i) => {
-      statBox(cx+i*sw2, finalCy+7, sw2-0.4, 9.5, lbl, val);
-    });
+    // Stats
+    const stats = [['Rct',m.reactions||1],['Spd',m.speed||'4"'],['CB',signed(m.combat)],['Tgh',m.toughness||3],['Svy',signed(m.savvy)],['Lck',m.luck||0],['XP',m.xp||0]];
+    const sw = CW/stats.length;
+    stats.forEach(([l,v],i) => statBox(cx+i*sw, cardY+7, sw-.3, 9.5, l, v));
 
-    // Sub info
-    let sy = finalCy + 19;
-    doc.setFontSize(5); doc.setFont('helvetica','normal'); setTextC(TEXT3);
-    const subInfo = [m.background, m.motivation, m.charClass].filter(Boolean).join(' / ');
-    if (subInfo) { text(subInfo, cx+2, sy); sy += 4; }
-    if (m.armor) { setTextC(TEAL); text('Armor: '+m.armor, cx+2, sy); sy += 3.5; }
-    if (m.implants) { setTextC(TEXT2); text('Implants: '+m.implants, cx+2, sy); sy += 3.5; }
+    // Info
+    let sy = cardY+19;
+    doc.setFontSize(5); doc.setFont('helvetica','normal'); st(...C.text3);
+    const sub = [m.background, m.motivation, m.charClass].filter(Boolean).join(' / ');
+    if (sub) { T(sub.slice(0,42), cx+2, sy); sy+=4; }
+    if (m.armor) { st(...C.teal); T('Armor: '+m.armor, cx+2, sy); sy+=3.5; }
+    if (m.implants) { st(...C.text2); T('Impl: '+m.implants.slice(0,30), cx+2, sy); sy+=3.5; }
 
     // Weapons
-    if (m.weapons && m.weapons.length > 0) {
-      setDraw(BORDER); line(cx+1, sy, cx+CARD_W-1, sy, 0.2); sy += 2;
+    if (m.weapons && m.weapons.length>0) {
+      sd(...C.border); lw(.2); doc.line(cx+1, sy, cx+CW-1, sy); sy+=2.5;
       m.weapons.slice(0,3).forEach(w => {
-        doc.setFontSize(5.5); doc.setFont('helvetica','bold'); setTextC(TEXT);
-        text(String(w.name||'—').slice(0,18), cx+2, sy);
-        doc.setFont('helvetica','normal'); setTextC(TEXT3);
-        const wstats = [w.range, w.shots, w.damage].filter(Boolean).join(' / ');
-        text(wstats, cx+CARD_W-2, sy, {align:'right'});
-        sy += 3.8;
+        const wn = w.name==='Custom / Other' ? (w.customName||'Custom') : (w.name||'—');
+        doc.setFontSize(5.5); doc.setFont('helvetica','bold'); st(...C.text);
+        T(wn.slice(0,18), cx+2, sy);
+        doc.setFont('helvetica','normal'); st(...C.text3);
+        T([w.range,w.shots,w.damage].filter(Boolean).join('/'), cx+CW-2, sy, {align:'right'});
+        sy+=3.8;
       });
     }
 
     // Gear
-    if (m.gear && m.gear.length > 0) {
-      const gearStr = m.gear.map(g=>typeof g==='string'?g:(g.name||'')).filter(Boolean).join(', ');
-      doc.setFontSize(5); doc.setFont('helvetica','italic'); setTextC(TEXT3);
-      text(doc.splitTextToSize(gearStr, CARD_W-4)[0], cx+2, finalCy+CARD_H-3);
+    if (m.gear && m.gear.length>0) {
+      const gs = m.gear.map(g=>typeof g==='string'?g:(g.name||'')).filter(Boolean).join(', ');
+      doc.setFontSize(4.8); doc.setFont('helvetica','italic'); st(...C.text3);
+      T(doc.splitTextToSize(gs,CW-4)[0], cx+2, cardY+CH-3);
     }
   });
 
-  // ══════════════════════════════════════════════════════════════
-  // REMAINING PAGES: one detailed sheet per crew member
-  // ══════════════════════════════════════════════════════════════
+  // ── DETAIL PAGES: one per crew member ──────────────────────────
   crew.members.forEach(m => {
     newPage();
-    pageHeader((m.isCapitain ? '★ CAPTAIN: ' : 'CREW: ') + (m.name||'Unknown').toUpperCase());
-
     const isCap = m.isCapitain;
-    let py = 24;
+    pageHeader((isCap?'★ CAPTAIN: ':'CREW: ')+(m.name||'Unknown').toUpperCase());
+    let py = 20;
 
-    // — Name / Identity block —
-    setFill(SURF); setDraw(isCap ? GOLD : BORDER);
-    doc.setLineWidth(isCap ? 0.6 : 0.3);
-    rect(M, py, W-2*M, 22, true, true);
-    setFill(isCap ? [45,35,8] : SURF2);
-    rect(M, py, W-2*M, 6.5, true, false);
-
+    // Identity block
+    sf(...C.surf); sd(...isCap?C.gold:C.border); lw(isCap?.6:.3);
+    R(M, py, W-2*M, 22, true, true);
+    sf(...isCap?C.cap:C.surf2); R(M, py, W-2*M, 6.5, true, false);
     doc.setFontSize(16); doc.setFont('helvetica','bold');
-    setTextC(isCap ? GOLD : TEXT);
-    text((isCap?'★ ':'')+String(m.name||'Unknown'), M+3, py+5.5);
-
-    doc.setFontSize(8); doc.setFont('helvetica','normal'); setTextC(TEXT2);
-    text(String(m.species||''), W-M-3, py+5.5, {align:'right'});
-
-    // Identity line
+    st(...isCap?C.gold:C.text);
+    T((isCap?'★ ':'')+String(m.name||'Unknown'), M+3, py+5.5);
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); st(...C.text2);
+    T(String(m.species||''), W-M-3, py+5.5, {align:'right'});
     py += 9;
     const idItems = [m.background, m.motivation, m.charClass].filter(Boolean);
-    doc.setFontSize(6.5); doc.setFont('helvetica','normal'); setTextC(TEXT3);
-    text(idItems.join('  /  '), M+3, py+2);
-    if (m.armor) { setTextC(TEAL); text('Armor: '+m.armor, M+3, py+7); }
-    if (m.implants) { setTextC(TEXT2); text('Implants: '+m.implants, W-M-3, py+7, {align:'right'}); }
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); st(...C.text3);
+    T(idItems.join('  /  '), M+3, py+2);
+    if (m.armor) { st(...C.teal); T('Armor: '+m.armor, M+3, py+7); }
+    if (m.implants) { st(...C.text2); T('Implants: '+m.implants, W-M-3, py+7, {align:'right'}); }
     py += 18;
 
-    // — Stats row —
-    const bigStats = [
-      ['Reactions', m.reactions||1],
-      ['Speed', m.speed||'4"'],
-      ['Combat Skill', signedNum(m.combat)],
-      ['Toughness', m.toughness||3],
-      ['Savvy', signedNum(m.savvy)],
-      ['Luck', m.luck||0],
-      ['XP', m.xp||0],
-    ];
-    const bsw = (W-2*M) / bigStats.length;
-    bigStats.forEach(([lbl,val],i) => {
-      statBox(M+i*bsw, py, bsw-0.5, 13, lbl, val);
-    });
-    py += 17;
+    // Stats row
+    const bstats=[['Reactions',m.reactions||1],['Speed',m.speed||'4"'],['Combat Skill',signed(m.combat)],['Toughness',m.toughness||3],['Savvy',signed(m.savvy)],['Luck',m.luck||0],['XP',m.xp||0]];
+    const bsw=(W-2*M)/bstats.length;
+    bstats.forEach(([l,v],i)=>statBox(M+i*bsw,py,bsw-.5,14,l,v));
+    py += 18;
 
-    // — Weapons table —
-    if (m.weapons && m.weapons.length > 0) {
-      sectionLabel('WEAPONS', M, py); py += 5;
-      setFill(SURF); setDraw(BORDER); rect(M,py,W-2*M,6,true,true);
-      const wCols = [50, 25, 20, 20, W-2*M-115];
-      const wHdrs = ['WEAPON', 'RANGE', 'SHOTS', 'DAMAGE', 'TRAITS'];
-      let wx = M+2;
-      wHdrs.forEach((h,i)=>{ doc.setFontSize(5); doc.setFont('helvetica','bold'); setTextC(TEXT3); text(h,wx,py+4); wx+=wCols[i]; });
-      py += 6;
-      m.weapons.forEach((w,wi) => {
-        setFill(wi%2===0?SURF:SURF2); setDraw(BORDER);
-        rect(M,py,W-2*M,6,true,true);
-        const wvals = [w.name||'—', w.range||'—', w.shots||'—', w.damage||'—', w.traits||''];
-        let wx2 = M+2;
-        wvals.forEach((v,i)=>{
-          doc.setFontSize(6.5); doc.setFont('helvetica',i===0?'bold':'normal');
-          setTextC(i===0?TEXT:TEXT2);
-          text(String(v).slice(0,i===4?30:20), wx2, py+4.2);
-          wx2+=wCols[i];
-        });
-        py += 6;
+    // Weapons table
+    if (m.weapons && m.weapons.length>0) {
+      sectionLabel('WEAPONS', M, py); py+=5;
+      sf(...C.surf); sd(...C.border); lw(.3); R(M,py,W-2*M,6,true,true);
+      const wC=[50,25,20,20,W-2*M-115];
+      ['WEAPON','RANGE','SHOTS','DAMAGE','TRAITS'].forEach((h,i)=>{
+        let wx=M+2; for(let j=0;j<i;j++) wx+=wC[j];
+        doc.setFontSize(5); doc.setFont('helvetica','bold'); st(...C.text3); T(h,wx,py+4);
       });
-      py += 3;
+      py+=6;
+      m.weapons.forEach((w,wi)=>{
+        sf(...wi%2===0?C.surf:C.surf2); sd(...C.border); lw(.2); R(M,py,W-2*M,6.5,true,true);
+        const wn=w.name==='Custom / Other'?(w.customName||'Custom'):(w.name||'—');
+        [wn,w.range||'—',w.shots||'—',w.damage||'—',w.traits||''].forEach((v,i)=>{
+          let wx=M+2; for(let j=0;j<i;j++) wx+=wC[j];
+          doc.setFontSize(6.5); doc.setFont('helvetica',i===0?'bold':'normal');
+          st(...i===0?C.text:C.text2);
+          T(String(v).slice(0,i===4?32:22), wx, py+4.5);
+        });
+        py+=6.5;
+      });
+      py+=3;
     }
 
-    // — Gear —
-    if (m.gear && m.gear.length > 0) {
-      sectionLabel('GEAR', M, py); py += 5;
-      setFill(SURF); setDraw(BORDER); rect(M,py,W-2*M,10,true,true);
-      doc.setFontSize(6.5); doc.setFont('helvetica','normal'); setTextC(TEXT2);
-      const gearStr = m.gear.map(g=>typeof g==='string'?g:(g.name||'')).filter(Boolean).join('  ·  ');
-      const gl = doc.splitTextToSize(gearStr, W-2*M-4);
-      gl.slice(0,2).forEach((l,i)=>text(l,M+2,py+4+i*4));
-      py += 13;
+    // Gear
+    if (m.gear && m.gear.length>0) {
+      sectionLabel('GEAR', M, py); py+=5;
+      sf(...C.surf); sd(...C.border); lw(.3); R(M,py,W-2*M,11,true,true);
+      const gs=m.gear.map(g=>typeof g==='string'?g:(g.name||'')).filter(Boolean).join('  ·  ');
+      doc.setFontSize(7); doc.setFont('helvetica','normal'); st(...C.text2);
+      doc.splitTextToSize(gs,W-2*M-4).slice(0,2).forEach((l,i)=>T(l,M+2,py+4+i*4.5));
+      py+=14;
     }
 
-    // — Luck dots —
-    if (m.luck > 0) {
-      sectionLabel('LUCK', M, py); py += 5;
-      for (let i=0; i<Math.min(m.luck,10); i++) {
-        const lx = M + 2 + i*7;
-        setFill(GOLD); setDraw(GOLD); doc.ellipse(lx+2, py-1.5, 2, 2, 'FD');
-        doc.setFontSize(7); doc.setFont('helvetica','bold'); setTextC([13,15,20]);
-        text('L', lx+2, py-0.2, {align:'center'});
+    // Luck dots
+    if (m.luck>0) {
+      sectionLabel('LUCK', M, py); py+=5;
+      for(let i=0;i<Math.min(m.luck,10);i++){
+        const lx=M+2+i*8;
+        sf(...C.gold); sd(...C.gold); doc.ellipse(lx+2.5, py-1.5, 2.5, 2.5, 'FD');
+        doc.setFontSize(7); doc.setFont('helvetica','bold');
+        st(...C.bg); T('L', lx+2.5, py-0.2, {align:'center'});
       }
-      py += 8;
+      py+=9;
     }
 
-    // — Notes —
-    const noteText = m.notes || '';
-    sectionLabel('NOTES', M, py); py += 5;
-    const noteH = 22;
-    setFill(SURF); setDraw(BORDER); rect(M,py,W-2*M,noteH,true,true);
-    if (noteText.trim()) {
-      doc.setFontSize(6.5); doc.setFont('helvetica','normal'); setTextC(TEXT2);
-      const nl = doc.splitTextToSize(noteText, W-2*M-4);
-      nl.slice(0,5).forEach((l,i)=>text(l,M+2,py+4+i*4));
+    // Notes
+    sectionLabel('NOTES', M, py); py+=5;
+    sf(...C.surf); sd(...C.border); lw(.3); R(M,py,W-2*M,24,true,true);
+    if ((m.notes||'').trim()) {
+      doc.setFontSize(7); doc.setFont('helvetica','normal'); st(...C.text2);
+      doc.splitTextToSize(m.notes,W-2*M-4).slice(0,5).forEach((l,i)=>T(l,M+2,py+4+i*4.2));
     }
-    py += noteH + 5;
+    py+=27;
 
-    // — XP track & advancement reminder —
-    sectionLabel('ADVANCEMENT', M, py); py += 5;
-    setFill(SURF); setDraw(BORDER); rect(M,py,W-2*M,10,true,true);
-    doc.setFontSize(5.5); doc.setFont('helvetica','normal'); setTextC(TEXT3);
-    text('XP to next improvement: 3 XP · Improve one stat by +1 or learn a new skill', M+2, py+4);
-    text('Captain: at 5 XP may roll on the Character Advancement table', M+2, py+8);
+    // Advancement reminder
+    sectionLabel('ADVANCEMENT', M, py); py+=5;
+    sf(...C.surf); sd(...C.border); lw(.3); R(M,py,W-2*M,11,true,true);
+    doc.setFontSize(6); doc.setFont('helvetica','normal'); st(...C.text2);
+    T('Earn 3 XP → improve one stat by +1 or gain a new skill', M+2, py+4.5);
+    T('Captain: at 5 XP may roll on the Character Advancement table', M+2, py+9);
 
     // Footer
-    doc.setFontSize(5); doc.setFont('helvetica','italic'); setTextC(TEXT3);
-    text('Permission is granted to make copies of this form for personal use.', W/2, H-5, {align:'center'});
+    doc.setFontSize(5); doc.setFont('helvetica','italic'); st(...C.text3);
+    T('Permission is granted to make copies of this form for personal use.', W/2, H-5, {align:'center'});
   });
 
   // Footer on page 1
   doc.setPage(1);
-  doc.setFontSize(5); doc.setFont('helvetica','italic'); setTextC(TEXT3);
-  text('Permission is granted to make copies of this form for personal use.', W/2, H-5, {align:'center'});
+  doc.setFontSize(5); doc.setFont('helvetica','italic'); st(...C.text3);
+  T('Permission is granted to make copies of this form for personal use.', W/2, H-5, {align:'center'});
 
   doc.save((crew.name||'crew').replace(/[^a-z0-9]/gi,'_').toLowerCase()+'_crew_log.pdf');
+
   } catch(err) {
     console.error('PDF export error:', err);
     alert('PDF export failed: ' + err.message + '\n\nCheck browser console for details.');
